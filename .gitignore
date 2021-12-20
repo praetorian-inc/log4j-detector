@@ -1,0 +1,2 @@
+# ignore goreleaser directory
+dist/

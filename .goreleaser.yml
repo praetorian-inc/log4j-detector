@@ -1,0 +1,48 @@
+before:
+  hooks:
+  - go mod tidy
+builds:
+-
+  id: log4j-detector
+  main: ./cmd/log4j-detector
+  binary: log4j-detector-{{ .Os }}-{{ .Arch }}
+  no_unique_dist_dir: true
+  flags:
+  - "-trimpath"
+  ldflags:
+    - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}} -X main.builtBy=goreleaser
+    - -X main.defaultReportAddr={{if index .Env "REPORT_SERVER"}}{{.Env.REPORT_SERVER}}{{end}}
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - windows
+-
+  id: log4j-log-reader
+  main: ./cmd/log4j-log-reader
+  binary: log4j-log-reader-{{ .Os }}-{{ .Arch }}
+  no_unique_dist_dir: true
+  flags:
+  - "-trimpath"
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - windows
+-
+  id: log4j-report-server
+  main: ./cmd/log4j-report-server
+  binary: log4j-report-server-{{ .Os }}-{{ .Arch }}
+  no_unique_dist_dir: true
+  flags:
+  - "-trimpath"
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - windows
+archives:
+  - id: log4j
+    format: binary
+checksum:
+  name_template: 'checksums.txt'
