@@ -1,2 +1,4 @@
 # ignore goreleaser directory
 dist/
+/build_new_version.cmd
+/log4j-remediation.log

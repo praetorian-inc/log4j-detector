@@ -3,9 +3,9 @@ before:
   - go mod tidy
 builds:
 -
-  id: log4j-detector
-  main: ./cmd/log4j-detector
-  binary: log4j-detector-{{ .Os }}-{{ .Arch }}
+  id: spring-detector
+  main: ./cmd/spring-detector
+  binary: spring-detector-{{ .Os }}-{{ .Arch }}
   no_unique_dist_dir: true
   flags:
   - "-trimpath"
@@ -18,9 +18,9 @@ builds:
   - linux
   - windows
 -
-  id: log4j-log-reader
-  main: ./cmd/log4j-log-reader
-  binary: log4j-log-reader-{{ .Os }}-{{ .Arch }}
+  id: log-reader
+  main: ./cmd/log-reader
+  binary: log-reader-{{ .Os }}-{{ .Arch }}
   no_unique_dist_dir: true
   flags:
   - "-trimpath"
@@ -30,9 +30,9 @@ builds:
   - linux
   - windows
 -
-  id: log4j-report-server
-  main: ./cmd/log4j-report-server
-  binary: log4j-report-server-{{ .Os }}-{{ .Arch }}
+  id: report-server
+  main: ./cmd/report-server
+  binary: report-server-{{ .Os }}-{{ .Arch }}
   no_unique_dist_dir: true
   flags:
   - "-trimpath"

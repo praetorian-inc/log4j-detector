@@ -1,13 +1,13 @@
-# Log4j Detector
+# SpringSAhell Detector
 
-> A client and reporting server to identify systems vulnerable to Log4j at
+> A client and reporting server to identify systems vulnerable to springshell at
 > scale. This work is based on [Stripe's Remediation Tools](https://github.com/stripe/log4j-remediation-tools),
 > but with more in-depth fingerprints and a server for collecting the results
 > for a more deployment-friendly rollout.
 
 > The tool is divided up into three components, the detector, responsible for
 > examining a target and determining if there is a currently-running java
-> process that has loaded a vulnerable version of Log4j, the server, responsible
+> process that has loaded a vulnerable version of spring-jars, the server, responsible
 > for collecting the results, and a log reader, which can quickly parse the
 > server messages and output a list of reported vulnerable hosts.
 
@@ -81,10 +81,9 @@ The log reader contains the following options:
 
 Like the Stripe tool that inspired this project, the detector locates Java
 processes on the target host and then lists all open files and checks them for
-the log4j jar. Once found, it will attempt to compare that jar with known
-vulnerable versions of log4j. We have compiled a list of fingerprints for every
-Log4j jar distributed by Apache. Additionally, we've fingerprinted each class
-unique to each version of Log4j to improve detection of a vulnerable instance.
+the vulnerable spring jar. Once found, it will attempt to compare that jar with known
+vulnerable versions of spring-mvc and spring-webflux. We have compiled a list of fingerprints for every
+jar distributed by Spring. 
 The inspiration for the improvements to this tool came from a client request,
 and they also requested the addition of a central reporting server to collect
 results so we decided to include that functionality as well.

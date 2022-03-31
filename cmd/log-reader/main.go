@@ -22,8 +22,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/hashicorp/go-version"
 	"github.com/praetorian-inc/log4j-remediation/pkg/build"
-	"github.com/praetorian-inc/log4j-remediation/pkg/log4j"
 	"github.com/praetorian-inc/log4j-remediation/pkg/types"
 )
 
@@ -63,13 +63,68 @@ func main() {
 			log.Fatalf("failed to unmarshal json: %s", err)
 		}
 
-		for _, vuln := range log4j.DetectVulnerabilities(report) {
+		for _, vuln := range DetectVulnerabilities(report) {
 			if outputjson {
 				js.Encode(vuln) // nolint:errcheck
 			} else {
-				fmt.Printf("%s: log4j version %s loaded by process [%d] %s in %s\n",
+				fmt.Printf("%s: vulnerable version %s loaded by process [%d] %s in %s\n",
 					vuln.Hostname, vuln.Version, vuln.ProcessID, vuln.ProcessName, vuln.Path)
 			}
 		}
 	}
+}
+
+// Per https://tanzu.vmware.com/security/cve-2022-22965
+var (
+	// Version fixes vulnerability.
+	fixedVersion_5_3 = version.Must(version.NewVersion("5.3.18"))
+	fixedVersion_5_2 = version.Must(version.NewVersion("5.2.20"))
+)
+
+func DetectVulnerabilities(report types.Report) []types.Vulnerability {
+	var vulns []types.Vulnerability
+
+	for _, r := range report.Results {
+		var vulnerableJAR *types.JAREntry
+
+		for i, jar := range r.JARs {
+
+			v, err := version.NewVersion(jar.Version)
+			if err != nil {
+				continue
+			}
+			fmt.Printf("Processing jar %s: version %s\n", jar.Path, jar.Version)
+
+			if v.Equal(fixedVersion_5_2) {
+			     fmt.Printf("Ignored (fixed) 5.2.x jar %s: version %s\n", jar.Path, jar.Version)
+				continue
+			}
+            
+			if v.Equal(fixedVersion_5_3) {
+			     fmt.Printf("Ignored (fixed) 5.3.x jar %s: version %s\n", jar.Path, jar.Version)
+				continue
+			}
+
+			if v.LessThan(fixedVersion_5_2) || v.LessThan(fixedVersion_5_3) {
+			    fmt.Printf("Match for  jar %s: version %s\n", jar.Path, jar.Version)
+				vulnerableJAR = &r.JARs[i]
+			}
+		}
+
+		if vulnerableJAR == nil {
+			continue
+		}
+
+		// If we get here, we're vulnerable
+		vulns = append(vulns, types.Vulnerability{
+			Hostname:    report.Hostname,
+			ProcessID:   r.PID,
+			ProcessName: r.ProcessName,
+			Version:     vulnerableJAR.Version,
+			Path:        vulnerableJAR.Path,
+			SHA256:      vulnerableJAR.SHA256,
+		})
+	}
+
+	return vulns
 }
