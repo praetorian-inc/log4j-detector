@@ -29,7 +29,8 @@ import (
 
 const (
 	Unknown         = "unknown"
-	ApacheLog4jCore = "Apache Log4j Core"
+	SpringMVC       = "spring-webmvc"
+	SpringFLUX      = "spring-webflux"
 )
 
 func jarEntryFromZip(path string, r *zip.Reader) types.JAREntry {
@@ -69,10 +70,19 @@ func versionFromJARFingerprint(path string) (version, hash string) {
 
 	hash = hashFsFile(f)
 
-	for _, fp := range log4jArchiveFingerprints {
+	for _, fp := range springmvcArchiveFingerprints {
 		if hash == fp.sha256 {
 			if verbose {
-				log.Printf("found log4j version %q by fingerprint", fp.version)
+				log.Printf("found springmvc version %q by fingerprint", fp.version)
+			}
+			return fp.version, hash
+		}
+	}
+
+	for _, fp := range springwebfluxArchiveFingerprints {
+		if hash == fp.sha256 {
+			if verbose {
+				log.Printf("found springwebflux version %q by fingerprint", fp.version)
 			}
 			return fp.version, hash
 		}
@@ -82,7 +92,8 @@ func versionFromJARFingerprint(path string) (version, hash string) {
 }
 
 func versionFromJARArchiveFingerprint(r *zip.Reader) (version, hash string) {
-	for _, fp := range log4jFingerprints {
+
+	for _, fp := range springmvcFingerprints {
 		f, err := r.Open(fp.file)
 		if err != nil {
 			continue
@@ -92,7 +103,23 @@ func versionFromJARArchiveFingerprint(r *zip.Reader) (version, hash string) {
 		hash := hashFsFile(f)
 		if hash == fp.sha256 {
 			if verbose {
-				log.Printf("found log4j version %q by fingerprint", fp.version)
+				log.Printf("found springmvc version %q by fingerprint", fp.version)
+			}
+			return fp.version, hash
+		}
+	}
+
+	for _, fp := range springwebfluxFingerprints {
+		f, err := r.Open(fp.file)
+		if err != nil {
+			continue
+		}
+		defer f.Close()
+
+		hash := hashFsFile(f)
+		if hash == fp.sha256 {
+			if verbose {
+				log.Printf("found springwebflux version %q by fingerprint", fp.version)
 			}
 			return fp.version, hash
 		}
@@ -122,25 +149,40 @@ func versionFromJARArchiveMeta(r *zip.Reader) string {
 	}
 
 	var core bool
-	if metadata["Implementation-Title"] == ApacheLog4jCore {
+	if metadata["Implementation-Title"] == "spring-webmvc" {
+		log.Printf("spring-mvc identified from manifest Implementation-Title")
 		core = true
 	}
-	if metadata["Specification-Title"] == ApacheLog4jCore {
+	if metadata["Specification-Title"] == "spring-webmvc" {
+		log.Printf("spring-mvc identified from manifest Specification-Title")
 		core = true
 	}
-	if metadata["Bundle-Name"] == ApacheLog4jCore {
+	if metadata["Bundle-Name"] == "spring-webmvc" {
+		log.Printf("spring-mvc identified from manifest Bundle-Name")
 		core = true
 	}
-	if metadata["Bundle-SymbolicName"] == "org.apache.logging.log4j.core" {
+	if metadata["Implementation-Title"] == "spring-webflux" {
+		log.Printf("spring-webflux identified from manifest Implementation-Title")
 		core = true
 	}
+	if metadata["Specification-Title"] == "spring-webflux" {
+		log.Printf("spring-webflux identified from manifest Specification-Title")
+		core = true
+	}
+	if metadata["Bundle-Name"] == "spring-webflux" {
+		log.Printf("spring-webflux identified from manifest Bundle-Name")
+		core = true
+	}
+    
 	if !core {
+//		log.Printf("No matching pattern found => unknown")
 		return Unknown
 	}
 
 	candidates := []string{"Implementation-Version", "Bundle-Version"}
 	for _, candidate := range candidates {
 		if s, ok := metadata[candidate]; ok {
+		    log.Printf("Version is %v", s)
 			return s
 		}
 	}

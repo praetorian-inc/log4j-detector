@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Searches the system for artifacts related to log4j and prints them to stdout
+// Searches the system for artifacts related to vulerable lib and prints them to stdout
 
 package main
 
@@ -38,6 +38,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/shirou/gopsutil/process"
 
 	"github.com/praetorian-inc/log4j-remediation/pkg/build"
@@ -120,6 +121,8 @@ func main() {
 		Results:     report,
 	}
 
+	r.Vulnerabilities = DetectVulnerabilities(r)
+
 	if verbose {
 		log.Printf("sending report to %s", reportAddr)
 	}
@@ -133,6 +136,15 @@ func main() {
 	if err != nil {
 		log.Println(err)
 	}
+    
+
+	log.Println("--")
+	for _, vuln := range r.Vulnerabilities {
+		log.Printf("RISK: %s using vulnerable lib %s in process [%d] %s at %s",
+			vuln.Hostname, vuln.Version, vuln.ProcessID, vuln.ProcessName, vuln.Path)
+
+	}
+
 }
 
 func makeReport(procs []*process.Process) (ret []types.ReportEntry) {
@@ -238,7 +250,7 @@ func checkOpenFiles(proc *process.Process, entry *types.ReportEntry) error {
 			log.Printf("[%d] scanning file %s", proc.Pid, file.Path)
 		}
 
-		if strings.Contains(file.Path, "log4j") {
+		if strings.Contains(file.Path, "spring") {
 			zr, err := zip.OpenReader(file.Path)
 			if err != nil {
 				continue
@@ -362,4 +374,60 @@ func getSysprops(proc *process.Process) (map[string]string, error) {
 	}
 
 	return ret, nil
+}
+
+
+// Per https://tanzu.vmware.com/security/cve-2022-22965
+var (
+	// Version fixes vulnerability.
+	fixedVersion_5_3 = version.Must(version.NewVersion("5.3.18"))
+	fixedVersion_5_2 = version.Must(version.NewVersion("5.2.20"))
+)
+
+func DetectVulnerabilities(report types.Report) []types.Vulnerability {
+	var vulns []types.Vulnerability
+
+	for _, r := range report.Results {
+		var vulnerableJAR *types.JAREntry
+
+		for i, jar := range r.JARs {
+
+			v, err := version.NewVersion(jar.Version)
+			if err != nil {
+				continue
+			}
+			fmt.Printf("Processing jar %s: version %s\n", jar.Path, jar.Version)
+
+			if v.Equal(fixedVersion_5_2) {
+			     fmt.Printf("Ignored (fixed) 5.2.x jar %s: version %s\n", jar.Path, jar.Version)
+				continue
+			}
+            
+			if v.Equal(fixedVersion_5_3) {
+			     fmt.Printf("Ignored (fixed) 5.3.x jar %s: version %s\n", jar.Path, jar.Version)
+				continue
+			}
+
+			if v.LessThan(fixedVersion_5_2) || v.LessThan(fixedVersion_5_3) {
+			    fmt.Printf("Match for  jar %s: version %s\n", jar.Path, jar.Version)
+				vulnerableJAR = &r.JARs[i]
+			}
+		}
+
+		if vulnerableJAR == nil {
+			continue
+		}
+
+		// If we get here, we're vulnerable
+		vulns = append(vulns, types.Vulnerability{
+			Hostname:    report.Hostname,
+			ProcessID:   r.PID,
+			ProcessName: r.ProcessName,
+			Version:     vulnerableJAR.Version,
+			Path:        vulnerableJAR.Path,
+			SHA256:      vulnerableJAR.SHA256,
+		})
+	}
+
+	return vulns
 }

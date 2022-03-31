@@ -24,8 +24,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/hashicorp/go-version"
+
 	"github.com/praetorian-inc/log4j-remediation/pkg/build"
-	"github.com/praetorian-inc/log4j-remediation/pkg/log4j"
+
 	"github.com/praetorian-inc/log4j-remediation/pkg/slack"
 	"github.com/praetorian-inc/log4j-remediation/pkg/types"
 	"github.com/praetorian-inc/log4j-remediation/pkg/webhook"
@@ -106,7 +108,7 @@ func LogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	report.Vulnerabilities = log4j.DetectVulnerabilities(report)
+	report.Vulnerabilities = DetectVulnerabilities(report)
 	if genericWebhook != "" {
 		err = webhook.Notify(genericWebhook, genericWebhookAuth, report)
 		if err != nil {
@@ -115,7 +117,7 @@ func LogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, vuln := range report.Vulnerabilities {
-		log.Printf("%s using log4j %s in process [%d] %s at %s",
+		log.Printf("%s using vulnerable lib %s in process [%d] %s at %s",
 			vuln.Hostname, vuln.Version, vuln.ProcessID, vuln.ProcessName, vuln.Path)
 
 		if slackWebhook != "" {
@@ -133,4 +135,60 @@ func LogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(archive, "%s\n", rawLog)
+}
+
+
+// Per https://tanzu.vmware.com/security/cve-2022-22965
+var (
+	// Version fixes vulnerability.
+	fixedVersion_5_3 = version.Must(version.NewVersion("5.3.18"))
+	fixedVersion_5_2 = version.Must(version.NewVersion("5.2.20"))
+)
+
+func DetectVulnerabilities(report types.Report) []types.Vulnerability {
+	var vulns []types.Vulnerability
+
+	for _, r := range report.Results {
+		var vulnerableJAR *types.JAREntry
+
+		for i, jar := range r.JARs {
+
+			v, err := version.NewVersion(jar.Version)
+			if err != nil {
+				continue
+			}
+//			fmt.Printf("Processing jar %s: version %s\n", jar.Path, jar.Version)
+
+			if v.Equal(fixedVersion_5_2) {
+//			     fmt.Printf("Ignored (fixed) 5.2.x jar %s: version %s\n", jar.Path, jar.Version)
+				continue
+			}
+            
+			if v.Equal(fixedVersion_5_3) {
+//			     fmt.Printf("Ignored (fixed) 5.3.x jar %s: version %s\n", jar.Path, jar.Version)
+				continue
+			}
+
+			if v.LessThan(fixedVersion_5_2) || v.LessThan(fixedVersion_5_3) {
+//			    fmt.Printf("Match for  jar %s: version %s\n", jar.Path, jar.Version)
+				vulnerableJAR = &r.JARs[i]
+			}
+		}
+
+		if vulnerableJAR == nil {
+			continue
+		}
+
+		// If we get here, we're vulnerable
+		vulns = append(vulns, types.Vulnerability{
+			Hostname:    report.Hostname,
+			ProcessID:   r.PID,
+			ProcessName: r.ProcessName,
+			Version:     vulnerableJAR.Version,
+			Path:        vulnerableJAR.Path,
+			SHA256:      vulnerableJAR.SHA256,
+		})
+	}
+
+	return vulns
 }
