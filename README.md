@@ -1,4 +1,4 @@
-# SpringSAhell Detector
+# SpringShell Detector
 
 > A client and reporting server to identify systems vulnerable to springshell at
 > scale. This work is based on [Stripe's Remediation Tools](https://github.com/stripe/log4j-remediation-tools),
