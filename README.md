@@ -13,6 +13,7 @@
 
 ## Binaries
 Find latest binaries for all suportes OS / Architecture in the release section https://github.com/KnutPape/log4j-detector/releases/.
+
 ## Building
 
 The simplest way to build cross-platform artifacts for Linux, macOS, and Windows is `goreleaser`.
@@ -43,7 +44,30 @@ goreleaser release --snapshot --rm-dist
 
 ## Running
 
+### Detector
+
+The detector contains the following options:
+
+  - `-server` - the url:port of the reporting server
+  - `-verbose` - more verbose log messages
+  - `-v` - prints the version of the tool
+
+Simply execute the binary matching your os and you will get results as output. You can redirect theoutput to a file.
+If a vulnerable libary is found you will see lines beginning with RISK: at the end of the Output.
+
+Sample output:
+```sh
+...
+2022/03/31 22:35:04 --
+2022/03/31 22:35:04 RISK: WSWB-H600411 using vulnerable lib 5.3.15 in process [28520] 7zFM.exe at \\?\C:\Users\Pape\.m2\repository\org\springframework\spring-webmvc\5.3.15\spring-webmvc-5.3.15.jar
+2022/03/31 22:35:04 RISK: WSWB-H600411 using vulnerable lib 5.3.15 in process [32740] java.exe at \\?\C:\Users\Pape\.m2\repository\org\springframework\spring-webmvc\5.3.15\spring-webmvc-5.3.15.jar
+2022/03/31 22:35:04 done
+```
+
 ### Server
+Execute the server binary. The server will report the port it is listening on (default: 8443).
+If the server should serve the binaries for download create a sub-folder named dist and place all binaries in the sub-folder.
+Go to http://my-server-name:8443/bin and the server will list the binaries for download.
 
 The server contains the following configuration options:
 
@@ -64,14 +88,6 @@ When the server starts, it will serve three endpoints,
   `/bin` - a directory where the detector binaries will be served out of for
   retrieval by team members. This endpoint is merely for convenience and does not
   need to be used if detector binaries are distributed in other ways.
-
-### Detector
-
-The detector contains the following options:
-
-  - `-server` - the url:port of the reporting server
-  - `-verbose` - more verbose log messages
-  - `-v` - prints the version of the tool
 
 ### Log Reader
 
