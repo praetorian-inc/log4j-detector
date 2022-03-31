@@ -35,7 +35,8 @@ without passing any command line arguments. Use the following command to
 pre-configure the server address:
 
 ```sh
-REPORT_SERVER=https://example.org:8443 goreleaser release --snapshot --rm-dist
+set REPORT_SERVER=https://example.org:8443
+goreleaser release --snapshot --rm-dist
 ```
 
 ## Running
