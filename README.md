@@ -12,7 +12,7 @@
 > server messages and output a list of reported vulnerable hosts.
 
 ## Binaries
-Find latest binaries for all suportes OS / Architecture in the release section https://github.com/KnutPape/log4j-detector/releases/tag/latest.
+Find latest binaries for all suportes OS / Architecture in the release section https://github.com/KnutPape/log4j-detector/releases/.
 ## Building
 
 The simplest way to build cross-platform artifacts for Linux, macOS, and Windows is `goreleaser`.
