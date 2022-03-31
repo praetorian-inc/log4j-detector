@@ -41,6 +41,7 @@ pre-configure the server address:
 set REPORT_SERVER=https://example.org:8443
 goreleaser release --snapshot --rm-dist
 ```
+If you specify a server and the server is reachable from the analyzed machine output is sent to the the server and collected in a central place.
 
 ## Running
 
