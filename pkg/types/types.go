@@ -35,6 +35,7 @@ type Report struct {
 	Hostname        string          `json:"hostname"`
 	OS              string          `json:"os"`
 	IPAddresses     []string        `json:"ip_addresses"`
+	MACAddresses    []string        `json:"mac_addresses"`
 	Timestamp       time.Time       `json:"timestamp"`
 	Results         []ReportEntry   `json:"results"`
 	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
