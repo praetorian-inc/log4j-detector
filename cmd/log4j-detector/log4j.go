@@ -87,6 +87,14 @@ func main() {
 		}
 	}
 
+	var macs []string
+	for _, iface := range ifaces {
+		mac := iface.HardwareAddr.String()
+		if mac != "" {
+			macs = append(macs, mac)
+		}
+	}
+
 	if verbose {
 		log.Printf("fetching processes")
 	}
@@ -112,12 +120,13 @@ func main() {
 	})
 
 	r := types.Report{
-		Version:     build.Version,
-		Hostname:    hostname,
-		OS:          runtime.GOOS,
-		IPAddresses: ips,
-		Timestamp:   time.Now(),
-		Results:     report,
+		Version:      build.Version,
+		Hostname:     hostname,
+		OS:           runtime.GOOS,
+		IPAddresses:  ips,
+		MACAddresses: macs,
+		Timestamp:    time.Now(),
+		Results:      report,
 	}
 
 	if verbose {
